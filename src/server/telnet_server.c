@@ -68,7 +68,7 @@ static int telnet_outputline(struct connection *connection, const char *line)
 
 	/* process lines in buffer */
 	while (*line) {
-		char *line_end = strchr(line, '\n');
+		char *line_end = strchr((char *)line, '\n');
 
 		if (line_end)
 			len = line_end-line;

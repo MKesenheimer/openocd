@@ -510,7 +510,7 @@ static bool ecos_escape_string(const char *raw, char *out, size_t limit)
 			continue;
 		}
 
-		char *fidx = strchr(tokens, *raw);
+		char *fidx = strchr((char *)tokens, *raw);
 		if (!fidx) {
 			/* Should never happen assuming xmlchars
 			 * vector and tokens string match. */

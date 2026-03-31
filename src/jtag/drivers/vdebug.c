@@ -1218,7 +1218,7 @@ COMMAND_HANDLER(vdebug_set_server)
 	if ((CMD_ARGC != 1) || !strchr(CMD_ARGV[0], ':'))
 		return ERROR_COMMAND_SYNTAX_ERROR;
 
-	char *pchar = strchr(CMD_ARGV[0], ':');
+	char * pchar = strchr((char*)CMD_ARGV[0], ':');
 	*pchar = '\0';
 	strncpy(vdc.server_name, CMD_ARGV[0], sizeof(vdc.server_name) - 1);
 	int port = atoi(++pchar);

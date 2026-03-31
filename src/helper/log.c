@@ -116,7 +116,7 @@ static void log_puts(enum log_levels level,
 		return;
 	}
 
-	f = strrchr(file, '/');
+	f = strrchr((char *)file, '/');
 	if (f)
 		file = f + 1;
 
