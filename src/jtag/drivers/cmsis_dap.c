@@ -2178,8 +2178,15 @@ COMMAND_HANDLER(cmsis_dap_handle_cmd_command)
 	}
 
 	uint8_t *resp = cmsis_dap_handle->response;
-	LOG_INFO("Returned data %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
-		resp[1], resp[2], resp[3], resp[4]);
+	
+	// custom vendor command to read 
+	if (command[0] == 0x80) {
+		LOG_INFO("Returned data %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8, 
+			resp[1], resp[2], resp[3], resp[4], resp[5], resp[6], resp[7], resp[8],  resp[9]);
+	} else {
+		LOG_INFO("Returned data %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8, 
+			resp[1], resp[2], resp[3], resp[4]);
+	}
 
 	return ERROR_OK;
 }
