@@ -612,6 +612,8 @@ static int mem_ap_write(struct adiv5_ap *ap, const uint8_t *buffer, uint32_t siz
 static int mem_ap_read(struct adiv5_ap *ap, uint8_t *buffer, uint32_t size, uint32_t count,
 		target_addr_t adr, bool addrinc)
 {
+	LOG_DEBUG("address = 0x%08" PRIx64 ", count = 0x%08" PRIx32, adr, count);
+
 	struct adiv5_dap *dap = ap->dap;
 	size_t nbytes = size * count;
 	target_addr_t address = adr;
@@ -807,21 +809,25 @@ int dap_dp_init(struct adiv5_dap *dap)
 	 * mode only and is ignored in swd mode. It also powers-up system and
 	 * debug domains in both jtag and swd modes, if not done before.
 	 */
+	LOG_DEBUG("W CTRL/STAT -> OK -> 0x50000022");
 	retval = dap_queue_dp_write(dap, DP_CTRL_STAT,
 				    dap->dp_ctrl_stat | SSTICKYERR | SSTICKYORUN);
 	if (retval != ERROR_OK)
 		return retval;
-
+	
+	LOG_DEBUG("R CTRL/STAT -> OK -> 0xf0000040");
 	retval = dap_queue_dp_read(dap, DP_CTRL_STAT, NULL);
 	if (retval != ERROR_OK)
 		return retval;
 
+	LOG_DEBUG("W CTRL/STAT -> OK -> 0x50000000");
 	retval = dap_queue_dp_write(dap, DP_CTRL_STAT, dap->dp_ctrl_stat);
 	if (retval != ERROR_OK)
 		return retval;
 
 	/* Check that we have debug power domains activated */
 	LOG_DEBUG("DAP: wait CDBGPWRUPACK");
+	LOG_DEBUG("R CTRL/STAT -> OK -> 0xf0000040");
 	retval = dap_dp_poll_register(dap, DP_CTRL_STAT,
 				      CDBGPWRUPACK, CDBGPWRUPACK,
 				      DAP_POWER_DOMAIN_TIMEOUT);
@@ -830,6 +836,7 @@ int dap_dp_init(struct adiv5_dap *dap)
 
 	if (!dap->ignore_syspwrupack) {
 		LOG_DEBUG("DAP: wait CSYSPWRUPACK");
+		LOG_DEBUG("R CTRL/STAT -> OK -> 0xf0000040");
 		retval = dap_dp_poll_register(dap, DP_CTRL_STAT,
 					      CSYSPWRUPACK, CSYSPWRUPACK,
 					      DAP_POWER_DOMAIN_TIMEOUT);
@@ -837,15 +844,19 @@ int dap_dp_init(struct adiv5_dap *dap)
 			return retval;
 	}
 
+	LOG_DEBUG("R CTRL/STAT -> OK -> 0xf0000040");
 	retval = dap_queue_dp_read(dap, DP_CTRL_STAT, NULL);
 	if (retval != ERROR_OK)
 		return retval;
 
 	/* With debug power on we can activate OVERRUN checking */
+	LOG_DEBUG("W CTRL/STAT -> OK -> 0x50000001");
 	dap->dp_ctrl_stat = CDBGPWRUPREQ | CSYSPWRUPREQ | CORUNDETECT;
 	retval = dap_queue_dp_write(dap, DP_CTRL_STAT, dap->dp_ctrl_stat);
 	if (retval != ERROR_OK)
 		return retval;
+
+	LOG_DEBUG("R CTRL/STAT -> OK -> 0xf0000041");
 	retval = dap_queue_dp_read(dap, DP_CTRL_STAT, NULL);
 	if (retval != ERROR_OK)
 		return retval;
@@ -899,6 +910,8 @@ int mem_ap_init(struct adiv5_ap *ap)
 	uint32_t cfg;
 	int retval;
 	struct adiv5_dap *dap = ap->dap;
+
+	LOG_DEBUG("mem_ap_init called.");
 
 	/* Set ap->cfg_reg before calling mem_ap_setup_transfer(). */
 	/* mem_ap_setup_transfer() needs to know if the MEM_AP supports LPAE. */
@@ -1132,6 +1145,8 @@ int dap_find_by_types_get_ap(struct adiv5_dap *dap,
 
 		/* read the IDR register of the Access Port */
 		uint32_t id_val = 0;
+
+		LOG_DEBUG("Searching for the MEM-AP: Reading AP_REG_IDR");
 
 		int retval = dap_queue_ap_read(ap, AP_REG_IDR(dap), &id_val);
 		if (retval != ERROR_OK) {

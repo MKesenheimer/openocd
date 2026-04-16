@@ -49,7 +49,13 @@ static const struct option long_options[] = {
 
 int configuration_output_handler(struct command_context *context, const char *line)
 {
-	LOG_USER_N("%s", line);
+	size_t len = strlen(line);
+	if (len > 0 && line[len - 1] != '\n' && line[len - 1] != '\r') {
+		LOG_USER_N("%s\n", line);
+	} else {
+		LOG_USER_N("%s", line);
+	}
+	
 
 	return ERROR_OK;
 }

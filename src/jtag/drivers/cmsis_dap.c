@@ -395,7 +395,7 @@ static int cmsis_dap_cmd_dap_swj_pins(uint8_t pins, uint8_t mask, uint32_t delay
 {
 	uint8_t *command = cmsis_dap_handle->command;
 
-	command[0] = CMD_DAP_SWJ_PINS;
+	command[0] = CMD_DAP_SWJ_PINS; // 0x10
 	command[1] = pins;
 	command[2] = mask;
 	h_u32_to_le(&command[3], delay);
@@ -444,7 +444,7 @@ static int cmsis_dap_cmd_dap_swj_sequence(uint8_t s_len, const uint8_t *sequence
 	printf("\n");
 #endif
 
-	command[0] = CMD_DAP_SWJ_SEQ;
+	command[0] = CMD_DAP_SWJ_SEQ; // CMD_DAP_SWJ_SEQ = 0x12
 	command[1] = s_len;
 	bit_copy(&command[2], 0, sequence, 0, s_len);
 
@@ -459,7 +459,7 @@ static int cmsis_dap_cmd_dap_info(uint8_t info, uint8_t **data)
 {
 	uint8_t *command = cmsis_dap_handle->command;
 
-	command[0] = CMD_DAP_INFO;
+	command[0] = CMD_DAP_INFO; // 0
 	command[1] = info;
 
 	int retval = cmsis_dap_xfer(cmsis_dap_handle, 2);
@@ -494,8 +494,8 @@ static int cmsis_dap_cmd_dap_connect(uint8_t mode)
 {
 	uint8_t *command = cmsis_dap_handle->command;
 
-	command[0] = CMD_DAP_CONNECT;
-	command[1] = mode;
+	command[0] = CMD_DAP_CONNECT; // 2
+	command[1] = mode;            // 1 = SWD, 2 = JTAG
 
 	int retval = cmsis_dap_xfer(cmsis_dap_handle, 2);
 	if (retval != ERROR_OK) {
@@ -530,10 +530,10 @@ static int cmsis_dap_cmd_dap_tfer_configure(uint8_t idle, uint16_t retry_count, 
 {
 	uint8_t *command = cmsis_dap_handle->command;
 
-	command[0] = CMD_DAP_TFER_CONFIGURE;
-	command[1] = idle;
-	h_u16_to_le(&command[2], retry_count);
-	h_u16_to_le(&command[4], match_retry);
+	command[0] = CMD_DAP_TFER_CONFIGURE; // 4
+	command[1] = idle; // 0
+	h_u16_to_le(&command[2], retry_count); // 64
+	h_u16_to_le(&command[4], match_retry); // 0
 
 	int retval = cmsis_dap_xfer(cmsis_dap_handle, 6);
 	if (retval != ERROR_OK || cmsis_dap_handle->response[1] != DAP_OK) {
@@ -548,8 +548,8 @@ static int cmsis_dap_cmd_dap_swd_configure(uint8_t cfg)
 {
 	uint8_t *command = cmsis_dap_handle->command;
 
-	command[0] = CMD_DAP_SWD_CONFIGURE;
-	command[1] = cfg;
+	command[0] = CMD_DAP_SWD_CONFIGURE; // 0x13
+	command[1] = cfg; // 0x0
 
 	int retval = cmsis_dap_xfer(cmsis_dap_handle, 2);
 	if (retval != ERROR_OK || cmsis_dap_handle->response[1] != DAP_OK) {
@@ -627,7 +627,7 @@ static int cmsis_dap_cmd_dap_swo_transport(uint8_t transport)
 {
 	uint8_t *command = cmsis_dap_handle->command;
 
-	command[0] = CMD_DAP_SWO_TRANSPORT;
+	command[0] = CMD_DAP_SWO_TRANSPORT; // CMD_DAP_SWO_TRANSPORT = 0x17
 	command[1] = transport;
 
 	int retval = cmsis_dap_xfer(cmsis_dap_handle, 2);
@@ -1172,7 +1172,7 @@ static int cmsis_dap_get_caps_info(void)
 	uint8_t *data;
 
 	/* INFO_ID_CAPS - byte */
-	int retval = cmsis_dap_cmd_dap_info(INFO_ID_CAPS, &data);
+	int retval = cmsis_dap_cmd_dap_info(INFO_ID_CAPS, &data); // INFO_ID_CAPS = 0xf0
 	if (retval != ERROR_OK)
 		return retval;
 
@@ -1251,7 +1251,7 @@ static int cmsis_dap_swd_switch_seq(enum swd_special_seq seq)
 
 		/* When we are reconnecting, DAP_Connect needs to be rerun, at
 		 * least on Keil ULINK-ME */
-		retval = cmsis_dap_cmd_dap_connect(CONNECT_SWD);
+		retval = cmsis_dap_cmd_dap_connect(CONNECT_SWD); // CONNECT_SWD = 0x01
 		if (retval != ERROR_OK)
 			return retval;
 	}
@@ -1313,7 +1313,7 @@ static int cmsis_dap_swd_open(void)
 		return ERROR_JTAG_DEVICE_ERROR;
 	}
 
-	int retval = cmsis_dap_cmd_dap_connect(CONNECT_SWD);
+	int retval = cmsis_dap_cmd_dap_connect(CONNECT_SWD); // CONNECT_SWD = 0x01
 	if (retval != ERROR_OK)
 		return retval;
 
@@ -1327,11 +1327,11 @@ static int cmsis_dap_init(void)
 {
 	uint8_t *data;
 
-	int retval = cmsis_dap_open();
+	int retval = cmsis_dap_open(); // initializes the handle and the backend
 	if (retval != ERROR_OK)
 		return retval;
 
-	cmsis_dap_flush_read(cmsis_dap_handle);
+	cmsis_dap_flush_read(cmsis_dap_handle); // clears the buffers
 
 	retval = cmsis_dap_get_caps_info();
 	if (retval != ERROR_OK)
@@ -1346,7 +1346,7 @@ static int cmsis_dap_init(void)
 		return retval;
 
 	if (swd_mode) {
-		retval = cmsis_dap_swd_open();
+		retval = cmsis_dap_swd_open(); // initializes the probe gpios and the state machines
 		if (retval != ERROR_OK)
 			return retval;
 	} else {
@@ -1356,7 +1356,7 @@ static int cmsis_dap_init(void)
 			return ERROR_JTAG_DEVICE_ERROR;
 		}
 
-		retval = cmsis_dap_cmd_dap_connect(CONNECT_JTAG);
+		retval = cmsis_dap_cmd_dap_connect(CONNECT_JTAG); // CONNECT_JTAG = 0x02
 		if (retval != ERROR_OK)
 			return retval;
 
@@ -1368,7 +1368,7 @@ static int cmsis_dap_init(void)
 	cmsis_dap_handle->packet_count = 1;
 
 	/* INFO_ID_PKT_SZ - short */
-	retval = cmsis_dap_cmd_dap_info(INFO_ID_PKT_SZ, &data);
+	retval = cmsis_dap_cmd_dap_info(INFO_ID_PKT_SZ, &data); // INFO_ID_PKT_SZ = 0xff, gets the supported packet size -> 64 for debugprobe
 	if (retval != ERROR_OK)
 		goto init_err;
 
@@ -1395,7 +1395,7 @@ static int cmsis_dap_init(void)
 	cmsis_dap_handle->read_count = 0;
 
 	/* INFO_ID_PKT_CNT - byte */
-	retval = cmsis_dap_cmd_dap_info(INFO_ID_PKT_CNT, &data);
+	retval = cmsis_dap_cmd_dap_info(INFO_ID_PKT_CNT, &data); // INFO_ID_PKT_CNT = 0xfe, 8 for debugprobe
 	if (retval != ERROR_OK)
 		goto init_err;
 
@@ -1420,11 +1420,11 @@ static int cmsis_dap_init(void)
 
 	/* Intentionally not checked for error, just logs an info message
 	 * not vital for further debugging */
-	(void)cmsis_dap_get_status();
+	(void)cmsis_dap_get_status(); // get the current status of the gpio pins SWCLK, SWDIO, TDI, RESET
 
 	/* Now try to connect to the target
 	 * TODO: This is all SWD only @ present */
-	retval = cmsis_dap_cmd_dap_swj_clock(adapter_get_speed_khz());
+	retval = cmsis_dap_cmd_dap_swj_clock(adapter_get_speed_khz()); // does not actually connect to the target, but rather sets the clock speed of the probe
 	if (retval != ERROR_OK)
 		goto init_err;
 
@@ -1475,7 +1475,7 @@ static int cmsis_dap_swd_init(void)
 
 static int cmsis_dap_quit(void)
 {
-	cmsis_dap_cmd_dap_disconnect();
+	cmsis_dap_cmd_dap_disconnect(); // disable all gpios
 
 	/* Both LEDs off */
 	cmsis_dap_cmd_dap_led(LED_ID_RUN, LED_OFF);
@@ -2165,6 +2165,7 @@ COMMAND_HANDLER(cmsis_dap_handle_info_command)
 
 COMMAND_HANDLER(cmsis_dap_handle_cmd_command)
 {
+	LOG_DEBUG("Executing custom vendor command.");
 	uint8_t *command = cmsis_dap_handle->command;
 
 	for (unsigned int i = 0; i < CMD_ARGC; i++)

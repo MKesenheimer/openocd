@@ -706,6 +706,7 @@ static int cortex_m_endreset_event(struct target *target)
 
 static int cortex_m_examine_debug_reason(struct target *target)
 {
+	LOG_DEBUG("cortex_m_examine_debug_reason called.");
 	struct cortex_m_common *cortex_m = target_to_cm(target);
 
 	/* THIS IS NOT GOOD, TODO - better logic for detection of debug state reason
@@ -732,6 +733,7 @@ static int cortex_m_examine_debug_reason(struct target *target)
 
 static int cortex_m_examine_exception_reason(struct target *target)
 {
+	LOG_DEBUG("cortex_m_examine_exception_reason called.");
 	uint32_t shcsr = 0, except_sr = 0, cfsr = -1, except_ar = -1;
 	struct armv7m_common *armv7m = target_to_armv7m(target);
 	struct adiv5_dap *swjdp = armv7m->arm.dap;
@@ -1001,6 +1003,9 @@ static int cortex_m_poll_one(struct target *target)
 
 	if (cortex_m->dcb_dhcsr_cumulated_sticky & S_RESET_ST) {
 		cortex_m->dcb_dhcsr_cumulated_sticky &= ~S_RESET_ST;
+		
+		//LOG_WARNING("cortex_m.c::cortex_m_poll_one(): TraceRip specific: Ignoring external reset. Not for production.");
+		// TraceRip: Ignore external reset
 		if (target->state != TARGET_RESET) {
 			target->state = TARGET_RESET;
 			LOG_TARGET_INFO(target, "external reset detected");
@@ -2785,6 +2790,8 @@ static int cortex_m_find_mem_ap(struct adiv5_dap *swjdp,
 
 int cortex_m_examine(struct target *target)
 {
+	LOG_DEBUG("cortex_m_examine called.");
+
 	int retval;
 	uint32_t cpuid, fpcr;
 	struct cortex_m_common *cortex_m = target_to_cm(target);
@@ -2819,6 +2826,8 @@ int cortex_m_examine(struct target *target)
 	}
 
 	if (!target_was_examined(target)) {
+		LOG_DEBUG("Target was not examined before. Examining.");
+
 		/* Read from Device Identification Registers */
 		retval = target_read_u32(target, CPUID, &cpuid);
 		if (retval != ERROR_OK)
@@ -3061,6 +3070,7 @@ int cortex_m_examine(struct target *target)
 			cortex_m->dwt_num_comp);
 	}
 
+	LOG_DEBUG("Leaving cortex_m_examine.");
 	return ERROR_OK;
 }
 

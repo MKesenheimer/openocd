@@ -667,6 +667,7 @@ static inline void target_reset_examined(struct target *target)
 
 static int default_examine(struct target *target)
 {
+	LOG_DEBUG("Default examine called.");
 	target_set_examined(target);
 	return ERROR_OK;
 }
@@ -685,7 +686,7 @@ int target_examine_one(struct target *target)
 
 	target_call_event_callbacks(target, TARGET_EVENT_EXAMINE_START);
 
-	int retval = target->type->examine(target);
+	int retval = target->type->examine(target); // -> calls cortex_m.c::cortex_m_examine()
 	if (retval != ERROR_OK) {
 		LOG_TARGET_ERROR(target, "Examination failed");
 		LOG_TARGET_DEBUG(target, "examine() returned error code %d", retval);
@@ -720,6 +721,7 @@ static int jtag_enable_callback(enum jtag_event event, void *priv)
  */
 int target_examine(void)
 {
+	LOG_DEBUG("Target examine started.");
 	int retval = ERROR_OK;
 	struct target *target;
 
@@ -1786,6 +1788,7 @@ int target_call_event_callbacks(struct target *target, enum target_event event)
 
 	if (event == TARGET_EVENT_HALTED) {
 		/* execute early halted first */
+		LOG_DEBUG("Target event halted.");
 		target_call_event_callbacks(target, TARGET_EVENT_GDB_HALT);
 	}
 
@@ -5230,6 +5233,8 @@ COMMAND_HANDLER(handle_target_configure)
 
 COMMAND_HANDLER(handle_target_examine)
 {
+	LOG_DEBUG("handle_target_examine called.");
+
 	bool allow_defer = false;
 
 	if (CMD_ARGC > 1)

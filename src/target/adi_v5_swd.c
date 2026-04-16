@@ -184,6 +184,8 @@ static int swd_multidrop_select_inner(struct adiv5_dap *dap, uint32_t *dpidr_ptr
 
 	assert(dap_is_multidrop(dap));
 
+	LOG_DEBUG("swd_multidrop_select_inner called.");
+
 	/* Send JTAG_TO_DORMANT and DORMANT_TO_SWD just once
 	 * and then use shorter LINE_RESET until communication fails */
 	if (!swd_multidrop_in_swd_state) {
@@ -342,6 +344,7 @@ static int swd_connect_single(struct adiv5_dap *dap)
 			swd_send_sequence(dap, JTAG_TO_DORMANT);
 			swd_send_sequence(dap, DORMANT_TO_SWD);
 		} else {
+			LOG_DEBUG("JTAG->SWD");
 			swd_send_sequence(dap, JTAG_TO_SWD);
 		}
 
@@ -365,6 +368,7 @@ static int swd_connect_single(struct adiv5_dap *dap)
 		 */
 		dap->select_dpbanksel_valid = true;
 
+		LOG_DEBUG("IDCODE");
 		retval = swd_queue_dp_read_inner(dap, DP_DPIDR, &dpidr);
 		if (retval == ERROR_OK) {
 			retval = swd_run_inner(dap);
@@ -388,6 +392,7 @@ static int swd_connect_single(struct adiv5_dap *dap)
 		dap->do_reconnect = false;
 
 		/* force clear all sticky faults */
+		LOG_DEBUG("W ABPORT -> OK -> 0x0000001e -> RDBUFF -> OK -> 0x00000000");
 		swd_clear_sticky_errors(dap);
 
 		retval = swd_run_inner(dap);
@@ -428,10 +433,13 @@ static int swd_connect(struct adiv5_dap *dap)
 		}
 	}
 
-	if (dap_is_multidrop(dap))
+	if (dap_is_multidrop(dap)) {
+		LOG_DEBUG("SWD connect multidrop");
 		status = swd_connect_multidrop(dap);
-	else
+	} else {
+		LOG_DEBUG("SWD connect single");
 		status = swd_connect_single(dap);
+	}
 
 	/* IHI 0031E B4.3.2:
 	 * "A WAIT response must not be issued to the ...
@@ -520,6 +528,8 @@ static int swd_queue_ap_bankselect(struct adiv5_ap *ap, unsigned int reg)
 	struct adiv5_dap *dap = ap->dap;
 	uint64_t sel;
 
+	LOG_DEBUG("select = 0x%08" PRIx64 ", reg = 0x%08" PRIx32, dap->select, reg);
+
 	if (is_adiv6(dap))
 		sel = ap->ap_num | (reg & 0x00000FF0);
 	else
@@ -579,12 +589,14 @@ static int swd_queue_ap_read(struct adiv5_ap *ap, unsigned int reg,
 	if (retval != ERROR_OK)
 		return retval;
 
+	//LOG_DEBUG("W SELECT -> OK -> 0x000000f0");
 	retval = swd_queue_ap_bankselect(ap, reg);
 	if (retval != ERROR_OK)
 		return retval;
 
 	swd->read_reg(swd_cmd(true, true, reg), dap->last_read, ap->memaccess_tck);
 	dap->last_read = data;
+	//LOG_DEBUG("R APx -> OK -> 0x%08" PRIx32, *data);
 
 	return check_sync(dap);
 }
